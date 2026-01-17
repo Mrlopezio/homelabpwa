@@ -12,16 +12,16 @@ A minimalistic Next.js Progressive Web App boilerplate with:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm dev
 
 # Build for production (generates service worker)
-npm run build
+pnpm build
 
 # Start production server
-npm start
+pnpm start
 ```
 
 ## Features
@@ -99,7 +99,7 @@ Edit `public/manifest.json` to customize your app's name, colors, and icons.
 Generate new icons by placing your source image and running:
 
 ```bash
-npm run generate-icons
+pnpm generate-icons
 ```
 
 Or edit `scripts/generate-icons.js` to customize the icon generation.
