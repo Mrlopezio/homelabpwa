@@ -22,7 +22,7 @@ export async function GET() {
     const response = await fetch(apiUrl, {
       method: "OPTIONS",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "X-API-Key": apiKey,
       },
       signal: controller.signal,
     });

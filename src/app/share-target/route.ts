@@ -52,7 +52,7 @@ async function sendToToolsApi(payload: ToolPayload): Promise<ApiResult> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "X-API-Key": apiKey,
       },
       body: JSON.stringify(payload),
     });

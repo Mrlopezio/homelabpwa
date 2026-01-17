@@ -312,7 +312,7 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.0</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.1</p>
       </main>
 
       <DebugPanel
