@@ -107,13 +107,29 @@ export async function POST(request: NextRequest) {
     const text = formData.get("text") as string | null;
     const url = formData.get("url") as string | null;
 
-    console.log("Received share:", { title, text, url });
+    console.log("[share-target] Received share (POST):", { title, text, url });
+
+    // URL is required by the API
+    if (!url) {
+      console.error("[share-target] No URL provided");
+      const params = new URLSearchParams();
+      if (title) params.set("shared_title", title);
+      if (text) params.set("shared_text", text);
+      params.set("shared_status", "error");
+      params.set("shared_error", "MISSING_URL");
+      params.set("shared_details", "URL is required to save a tool");
+
+      const redirectUrl = new URL("/", request.url);
+      redirectUrl.search = params.toString();
+      return NextResponse.redirect(redirectUrl, { status: 303 });
+    }
 
     // Build the payload for the tools API
+    // name: the page/app title, description: shared text, url: the link
     const payload: ToolPayload = {
-      name: title || text?.slice(0, 50) || "Shared Item",
+      name: title || new URL(url).hostname || "Shared Tool",
       description: text || title || "",
-      url: url || "",
+      url: url,
       tags: extractTags(text),
     };
 
@@ -158,11 +174,27 @@ export async function GET(request: NextRequest) {
 
     console.log("[share-target] Received share (GET):", { title, text, url });
 
+    // URL is required by the API
+    if (!url) {
+      console.error("[share-target] No URL provided");
+      const params = new URLSearchParams();
+      if (title) params.set("shared_title", title);
+      if (text) params.set("shared_text", text);
+      params.set("shared_status", "error");
+      params.set("shared_error", "MISSING_URL");
+      params.set("shared_details", "URL is required to save a tool");
+
+      const redirectUrl = new URL("/", request.url);
+      redirectUrl.search = params.toString();
+      return NextResponse.redirect(redirectUrl, { status: 303 });
+    }
+
     // Build the payload for the tools API
+    // name: the page/app title, description: shared text, url: the link
     const payload: ToolPayload = {
-      name: title || text?.slice(0, 50) || "Shared Item",
+      name: title || new URL(url).hostname || "Shared Tool",
       description: text || title || "",
-      url: url || "",
+      url: url,
       tags: extractTags(text),
     };
 
