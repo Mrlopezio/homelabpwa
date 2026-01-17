@@ -15,9 +15,13 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const [isInstallable, setIsInstallable] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [notificationPermission, setNotificationPermission] = useState<
+    NotificationPermission | "unsupported"
+  >("default");
   const [isShareSupported, setIsShareSupported] = useState(false);
-  const [sharedContent, setSharedContent] = useState<SharedContent | null>(null);
+  const [sharedContent, setSharedContent] = useState<SharedContent | null>(
+    null
+  );
 
   useEffect(() => {
     // Check for shared content in URL
@@ -57,18 +61,21 @@ function HomeContent() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
     };
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (deferredPrompt as any).prompt();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { outcome } = await (deferredPrompt as any).userChoice;
-    
+
     if (outcome === "accepted") {
       setIsInstallable(false);
     }
@@ -100,11 +107,11 @@ function HomeContent() {
     try {
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
-      
+
       if (permission === "granted") {
         // Register for push notifications
         const registration = await navigator.serviceWorker.ready;
-        
+
         // For demo purposes, show a local notification
         registration.showNotification("HomeLab PWA", {
           body: "Push notifications enabled!",
@@ -166,8 +173,16 @@ function HomeContent() {
               </button>
             </div>
             <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
-              {sharedContent.title && <p><strong>Title:</strong> {sharedContent.title}</p>}
-              {sharedContent.text && <p><strong>Text:</strong> {sharedContent.text}</p>}
+              {sharedContent.title && (
+                <p>
+                  <strong>Title:</strong> {sharedContent.title}
+                </p>
+              )}
+              {sharedContent.text && (
+                <p>
+                  <strong>Text:</strong> {sharedContent.text}
+                </p>
+              )}
               {sharedContent.url && (
                 <p>
                   <strong>URL:</strong>{" "}
@@ -177,7 +192,9 @@ function HomeContent() {
                 </p>
               )}
               {sharedContent.filesCount && (
-                <p><strong>Files:</strong> {sharedContent.filesCount} file(s)</p>
+                <p>
+                  <strong>Files:</strong> {sharedContent.filesCount} file(s)
+                </p>
               )}
             </div>
           </div>
@@ -244,11 +261,13 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
+          <div className="text-zinc-600 dark:text-zinc-400">Loading...</div>
+        </div>
+      }
+    >
       <HomeContent />
     </Suspense>
   );
