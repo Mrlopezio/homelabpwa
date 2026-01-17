@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { DebugPanel } from "@/components/DebugPanel";
 
 interface SharedContent {
   title?: string;
@@ -10,6 +11,8 @@ interface SharedContent {
   url?: string;
   filesCount?: number;
   status?: "success" | "error";
+  error?: string;
+  details?: string;
 }
 
 function HomeContent() {
@@ -34,6 +37,8 @@ function HomeContent() {
       | "success"
       | "error"
       | null;
+    const sharedError = searchParams.get("shared_error");
+    const sharedDetails = searchParams.get("shared_details");
 
     if (sharedTitle || sharedText || sharedUrl || sharedFiles || sharedStatus) {
       setSharedContent({
@@ -42,6 +47,8 @@ function HomeContent() {
         url: sharedUrl || undefined,
         filesCount: sharedFiles ? parseInt(sharedFiles, 10) : undefined,
         status: sharedStatus || undefined,
+        error: sharedError || undefined,
+        details: sharedDetails || undefined,
       });
     }
   }, [searchParams]);
@@ -236,6 +243,16 @@ function HomeContent() {
                   <strong>Files:</strong> {sharedContent.filesCount} file(s)
                 </p>
               )}
+              {sharedContent.error && (
+                <p className="mt-2 font-mono text-xs">
+                  <strong>Error:</strong> {sharedContent.error}
+                </p>
+              )}
+              {sharedContent.details && (
+                <p className="font-mono text-xs break-all">
+                  <strong>Details:</strong> {sharedContent.details}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -295,8 +312,13 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.2.0</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.0</p>
       </main>
+
+      <DebugPanel
+        lastError={sharedContent?.error}
+        lastApiResponse={sharedContent?.details}
+      />
     </div>
   );
 }

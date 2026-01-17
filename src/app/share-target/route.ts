@@ -10,21 +10,36 @@ interface ToolPayload {
   tags: string[];
 }
 
-async function sendToToolsApi(payload: ToolPayload): Promise<boolean> {
+interface ApiResult {
+  success: boolean;
+  error?: string;
+  details?: string;
+}
+
+async function sendToToolsApi(payload: ToolPayload): Promise<ApiResult> {
   const apiKey = process.env.TOOLS_API_KEY;
   const apiUrl = process.env.TOOLS_API_URL;
 
+  console.log("[share-target] Starting API call", {
+    hasApiKey: !!apiKey,
+    hasApiUrl: !!apiUrl,
+    apiUrlPreview: apiUrl?.substring(0, 50),
+    payload,
+  });
+
   if (!apiKey) {
-    console.error("TOOLS_API_KEY not configured");
-    return false;
+    console.error("[share-target] TOOLS_API_KEY not configured");
+    return { success: false, error: "CONFIG_ERROR", details: "TOOLS_API_KEY not set" };
   }
 
   if (!apiUrl) {
-    console.error("TOOLS_API_URL not configured");
-    return false;
+    console.error("[share-target] TOOLS_API_URL not configured");
+    return { success: false, error: "CONFIG_ERROR", details: "TOOLS_API_URL not set" };
   }
 
   try {
+    console.log("[share-target] Fetching:", apiUrl);
+    
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -34,17 +49,29 @@ async function sendToToolsApi(payload: ToolPayload): Promise<boolean> {
       body: JSON.stringify(payload),
     });
 
+    console.log("[share-target] Response status:", response.status);
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Unknown error");
-      console.error("Failed to send to tools API:", response.status, errorText);
-      return false;
+      const errorText = await response.text().catch(() => "Could not read response");
+      console.error("[share-target] API error:", response.status, errorText);
+      return {
+        success: false,
+        error: `HTTP_${response.status}`,
+        details: errorText.substring(0, 200),
+      };
     }
 
-    console.log("Successfully sent to tools API");
-    return true;
+    const responseData = await response.json().catch(() => ({}));
+    console.log("[share-target] Success:", responseData);
+    return { success: true };
   } catch (error) {
-    console.error("Error sending to tools API:", error);
-    return false;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[share-target] Fetch error:", errorMessage);
+    return {
+      success: false,
+      error: "FETCH_ERROR",
+      details: errorMessage,
+    };
   }
 }
 
@@ -81,22 +108,28 @@ export async function POST(request: NextRequest) {
     };
 
     // Send to tools API
-    const success = await sendToToolsApi(payload);
+    const result = await sendToToolsApi(payload);
 
     // Build redirect URL with status
     const params = new URLSearchParams();
     if (title) params.set("shared_title", title);
     if (text) params.set("shared_text", text);
     if (url) params.set("shared_url", url);
-    params.set("shared_status", success ? "success" : "error");
+    params.set("shared_status", result.success ? "success" : "error");
+    if (result.error) params.set("shared_error", result.error);
+    if (result.details) params.set("shared_details", result.details.substring(0, 100));
 
     const redirectUrl = new URL("/", request.url);
     redirectUrl.search = params.toString();
 
     return NextResponse.redirect(redirectUrl, { status: 303 });
   } catch (error) {
-    console.error("Share target error:", error);
-    const redirectUrl = new URL("/?shared_status=error", request.url);
+    console.error("[share-target] Unexpected error:", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const redirectUrl = new URL(
+      `/?shared_status=error&shared_error=UNEXPECTED&shared_details=${encodeURIComponent(errorMsg.substring(0, 100))}`,
+      request.url
+    );
     return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 }
@@ -120,14 +153,16 @@ export async function GET(request: NextRequest) {
   };
 
   // Send to tools API
-  const success = await sendToToolsApi(payload);
+  const result = await sendToToolsApi(payload);
 
   // Build redirect URL with status
   const params = new URLSearchParams();
   if (title) params.set("shared_title", title);
   if (text) params.set("shared_text", text);
   if (url) params.set("shared_url", url);
-  params.set("shared_status", success ? "success" : "error");
+  params.set("shared_status", result.success ? "success" : "error");
+  if (result.error) params.set("shared_error", result.error);
+  if (result.details) params.set("shared_details", result.details.substring(0, 100));
 
   const redirectUrl = new URL("/", request.url);
   redirectUrl.search = params.toString();
