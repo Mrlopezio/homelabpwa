@@ -9,6 +9,7 @@ interface SharedContent {
   text?: string;
   url?: string;
   filesCount?: number;
+  status?: "success" | "error";
 }
 
 function HomeContent() {
@@ -29,13 +30,18 @@ function HomeContent() {
     const sharedText = searchParams.get("shared_text");
     const sharedUrl = searchParams.get("shared_url");
     const sharedFiles = searchParams.get("shared_files");
+    const sharedStatus = searchParams.get("shared_status") as
+      | "success"
+      | "error"
+      | null;
 
-    if (sharedTitle || sharedText || sharedUrl || sharedFiles) {
+    if (sharedTitle || sharedText || sharedUrl || sharedFiles || sharedStatus) {
       setSharedContent({
         title: sharedTitle || undefined,
         text: sharedText || undefined,
         url: sharedUrl || undefined,
         filesCount: sharedFiles ? parseInt(sharedFiles, 10) : undefined,
+        status: sharedStatus || undefined,
       });
     }
   }, [searchParams]);
@@ -160,27 +166,61 @@ function HomeContent() {
         </div>
 
         {sharedContent && (
-          <div className="w-full p-4 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+          <div
+            className={`w-full p-4 rounded-xl border ${
+              sharedContent.status === "error"
+                ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
+                : sharedContent.status === "success"
+                  ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                  : "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+            }`}
+          >
             <div className="flex justify-between items-start mb-2">
-              <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                Shared Content Received
+              <h2
+                className={`text-sm font-semibold ${
+                  sharedContent.status === "error"
+                    ? "text-red-800 dark:text-red-200"
+                    : sharedContent.status === "success"
+                      ? "text-green-800 dark:text-green-200"
+                      : "text-blue-800 dark:text-blue-200"
+                }`}
+              >
+                {sharedContent.status === "error"
+                  ? "Failed to Save Tool"
+                  : sharedContent.status === "success"
+                    ? "Tool Saved Successfully"
+                    : "Shared Content Received"}
               </h2>
               <button
                 onClick={handleDismissShared}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                className={`hover:opacity-70 ${
+                  sharedContent.status === "error"
+                    ? "text-red-600 dark:text-red-400"
+                    : sharedContent.status === "success"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-blue-600 dark:text-blue-400"
+                }`}
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
+            <div
+              className={`space-y-1 text-sm ${
+                sharedContent.status === "error"
+                  ? "text-red-700 dark:text-red-300"
+                  : sharedContent.status === "success"
+                    ? "text-green-700 dark:text-green-300"
+                    : "text-blue-700 dark:text-blue-300"
+              }`}
+            >
               {sharedContent.title && (
                 <p>
-                  <strong>Title:</strong> {sharedContent.title}
+                  <strong>Name:</strong> {sharedContent.title}
                 </p>
               )}
               {sharedContent.text && (
                 <p>
-                  <strong>Text:</strong> {sharedContent.text}
+                  <strong>Description:</strong> {sharedContent.text}
                 </p>
               )}
               {sharedContent.url && (
