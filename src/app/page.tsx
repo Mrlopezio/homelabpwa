@@ -10,9 +10,18 @@ interface SharedContent {
   text?: string;
   url?: string;
   filesCount?: number;
-  status?: "success" | "error";
+  status?: "success" | "error" | "pending";
   error?: string;
   details?: string;
+  tags?: string[];
+}
+
+interface MetaData {
+  url: string;
+  title: string;
+  description: string;
+  logo_url: string;
+  screenshot_url: string;
 }
 
 function HomeContent() {
@@ -26,6 +35,10 @@ function HomeContent() {
   const [sharedContent, setSharedContent] = useState<SharedContent | null>(
     null
   );
+  const [metaData, setMetaData] = useState<MetaData | null>(null);
+  const [isLoadingMeta, setIsLoadingMeta] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [metaError, setMetaError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for shared content in URL
@@ -36,12 +49,14 @@ function HomeContent() {
     const sharedStatus = searchParams.get("shared_status") as
       | "success"
       | "error"
+      | "pending"
       | null;
     const sharedError = searchParams.get("shared_error");
     const sharedDetails = searchParams.get("shared_details");
+    const sharedTags = searchParams.get("shared_tags");
 
     if (sharedTitle || sharedText || sharedUrl || sharedFiles || sharedStatus) {
-      setSharedContent({
+      const content: SharedContent = {
         title: sharedTitle || undefined,
         text: sharedText || undefined,
         url: sharedUrl || undefined,
@@ -49,9 +64,88 @@ function HomeContent() {
         status: sharedStatus || undefined,
         error: sharedError || undefined,
         details: sharedDetails || undefined,
-      });
+        tags: sharedTags ? sharedTags.split(",") : undefined,
+      };
+      setSharedContent(content);
+
+      // If pending, fetch metadata
+      if (sharedStatus === "pending" && sharedUrl) {
+        fetchMetaData(sharedUrl);
+      }
     }
   }, [searchParams]);
+
+  const fetchMetaData = async (url: string) => {
+    setIsLoadingMeta(true);
+    setMetaError(null);
+    try {
+      const response = await fetch("/api/tools/fetch-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data: MetaData = await response.json();
+      setMetaData(data);
+    } catch (error) {
+      console.error("Failed to fetch metadata:", error);
+      setMetaError(error instanceof Error ? error.message : "Failed to fetch metadata");
+    } finally {
+      setIsLoadingMeta(false);
+    }
+  };
+
+  const handleSendTool = async () => {
+    if (!sharedContent?.url) return;
+
+    setIsSending(true);
+    try {
+      // Build payload using fetched metadata or fallback to shared content
+      const payload = {
+        name: metaData?.title || sharedContent.title || new URL(sharedContent.url).hostname,
+        description: metaData?.description || sharedContent.text || "",
+        url: sharedContent.url,
+        tags: sharedContent.tags || [],
+      };
+
+      const response = await fetch("/api/tools/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        setSharedContent({
+          ...sharedContent,
+          status: "error",
+          error: result.error || `HTTP ${response.status}`,
+          details: result.details,
+        });
+      } else {
+        setSharedContent({
+          ...sharedContent,
+          status: "success",
+        });
+        setMetaData(null);
+      }
+    } catch (error) {
+      setSharedContent({
+        ...sharedContent,
+        status: "error",
+        error: "SEND_ERROR",
+        details: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   useEffect(() => {
     // Check if share API is supported
@@ -156,6 +250,8 @@ function HomeContent() {
 
   const handleDismissShared = () => {
     setSharedContent(null);
+    setMetaData(null);
+    setMetaError(null);
     // Clear URL params
     window.history.replaceState({}, "", "/");
   };
@@ -172,14 +268,127 @@ function HomeContent() {
           </p>
         </div>
 
-        {sharedContent && (
+        {/* Pending state - show preview card with metadata */}
+        {sharedContent && sharedContent.status === "pending" && (
+          <div className="w-full rounded-xl border bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 overflow-hidden">
+            <div className="flex justify-between items-center p-3 border-b border-zinc-200 dark:border-zinc-800">
+              <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                Preview Tool
+              </h2>
+              <button
+                onClick={handleDismissShared}
+                className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            {isLoadingMeta ? (
+              <div className="p-6 text-center">
+                <div className="inline-block w-6 h-6 border-2 border-zinc-300 border-t-blue-500 rounded-full animate-spin" />
+                <p className="mt-2 text-sm text-zinc-500">Loading metadata...</p>
+              </div>
+            ) : metaError ? (
+              <div className="p-4">
+                <div className="text-red-500 text-sm mb-3">
+                  Failed to load metadata: {metaError}
+                </div>
+                <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <p><strong>URL:</strong> {sharedContent.url}</p>
+                  {sharedContent.title && <p><strong>Title:</strong> {sharedContent.title}</p>}
+                </div>
+              </div>
+            ) : metaData ? (
+              <div className="p-4 space-y-4">
+                {/* Header with logo and title */}
+                <div className="flex items-start gap-3">
+                  {metaData.logo_url && (
+                    <img
+                      src={metaData.logo_url}
+                      alt="Logo"
+                      className="w-12 h-12 rounded-lg object-contain bg-white dark:bg-zinc-800 p-1"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-zinc-900 dark:text-white truncate">
+                      {metaData.title || sharedContent.title || "Untitled"}
+                    </h3>
+                    <p className="text-xs text-zinc-500 truncate">{metaData.url}</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {metaData.description && (
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                    {metaData.description}
+                  </p>
+                )}
+
+                {/* Screenshot */}
+                {metaData.screenshot_url && (
+                  <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                    <img
+                      src={metaData.screenshot_url}
+                      alt="Screenshot"
+                      className="w-full h-auto"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Tags */}
+                {sharedContent.tags && sharedContent.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {sharedContent.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-0.5 text-xs bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                <p><strong>URL:</strong> {sharedContent.url}</p>
+                {sharedContent.title && <p><strong>Title:</strong> {sharedContent.title}</p>}
+              </div>
+            )}
+
+            {/* Send button */}
+            <div className="p-3 border-t border-zinc-200 dark:border-zinc-800">
+              <button
+                onClick={handleSendTool}
+                disabled={isSending}
+                className="w-full h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+              >
+                {isSending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Save Tool"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success/Error states */}
+        {sharedContent && (sharedContent.status === "success" || sharedContent.status === "error") && (
           <div
             className={`w-full p-4 rounded-xl border ${
               sharedContent.status === "error"
                 ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
-                : sharedContent.status === "success"
-                ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
-                : "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                : "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
             }`}
           >
             <div className="flex justify-between items-start mb-2">
@@ -187,25 +396,19 @@ function HomeContent() {
                 className={`text-sm font-semibold ${
                   sharedContent.status === "error"
                     ? "text-red-800 dark:text-red-200"
-                    : sharedContent.status === "success"
-                    ? "text-green-800 dark:text-green-200"
-                    : "text-blue-800 dark:text-blue-200"
+                    : "text-green-800 dark:text-green-200"
                 }`}
               >
                 {sharedContent.status === "error"
                   ? "Failed to Save Tool"
-                  : sharedContent.status === "success"
-                  ? "Tool Saved Successfully"
-                  : "Shared Content Received"}
+                  : "Tool Saved Successfully"}
               </h2>
               <button
                 onClick={handleDismissShared}
                 className={`hover:opacity-70 ${
                   sharedContent.status === "error"
                     ? "text-red-600 dark:text-red-400"
-                    : sharedContent.status === "success"
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-blue-600 dark:text-blue-400"
+                    : "text-green-600 dark:text-green-400"
                 }`}
               >
                 ✕
@@ -215,9 +418,7 @@ function HomeContent() {
               className={`space-y-1 text-sm ${
                 sharedContent.status === "error"
                   ? "text-red-700 dark:text-red-300"
-                  : sharedContent.status === "success"
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-blue-700 dark:text-blue-300"
+                  : "text-green-700 dark:text-green-300"
               }`}
             >
               {sharedContent.title && (
@@ -312,7 +513,7 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.4</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.4</p>
       </main>
 
       <DebugPanel

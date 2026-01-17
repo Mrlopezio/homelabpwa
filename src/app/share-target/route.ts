@@ -3,88 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 // Ensure this route is always dynamic
 export const dynamic = "force-dynamic";
 
-interface ToolPayload {
-  name: string;
-  description: string;
-  url: string;
-  tags: string[];
-}
-
-interface ApiResult {
-  success: boolean;
-  error?: string;
-  details?: string;
-}
-
-async function sendToToolsApi(payload: ToolPayload): Promise<ApiResult> {
-  const apiKey = process.env.TOOLS_API_KEY;
-  const apiUrl = process.env.TOOLS_API_URL;
-
-  console.log("[share-target] Starting API call", {
-    hasApiKey: !!apiKey,
-    hasApiUrl: !!apiUrl,
-    apiUrlPreview: apiUrl?.substring(0, 50),
-    payload,
-  });
-
-  if (!apiKey) {
-    console.error("[share-target] TOOLS_API_KEY not configured");
-    return {
-      success: false,
-      error: "CONFIG_ERROR",
-      details: "TOOLS_API_KEY not set",
-    };
-  }
-
-  if (!apiUrl) {
-    console.error("[share-target] TOOLS_API_URL not configured");
-    return {
-      success: false,
-      error: "CONFIG_ERROR",
-      details: "TOOLS_API_URL not set",
-    };
-  }
-
-  try {
-    console.log("[share-target] Fetching:", apiUrl);
-
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-Key": apiKey,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    console.log("[share-target] Response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response
-        .text()
-        .catch(() => "Could not read response");
-      console.error("[share-target] API error:", response.status, errorText);
-      return {
-        success: false,
-        error: `HTTP_${response.status}`,
-        details: errorText.substring(0, 200),
-      };
-    }
-
-    const responseData = await response.json().catch(() => ({}));
-    console.log("[share-target] Success:", responseData);
-    return { success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[share-target] Fetch error:", errorMessage);
-    return {
-      success: false,
-      error: "FETCH_ERROR",
-      details: errorMessage,
-    };
-  }
-}
-
 function extractTags(text: string | null): string[] {
   if (!text) return [];
 
@@ -112,14 +30,6 @@ function extractUrlFromText(text: string | null): string | null {
   }
 
   return null;
-}
-
-function removeUrlFromText(text: string | null, url: string | null): string {
-  if (!text) return "";
-  if (!url) return text;
-
-  // Remove the URL from text to get clean description
-  return text.replace(url, "").trim();
 }
 
 export async function POST(request: NextRequest) {
@@ -158,30 +68,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
-    // Clean description by removing the URL from text
-    const description = removeUrlFromText(text, url) || title || "";
-
-    // Build the payload for the tools API
-    // name: the page/app title, description: shared text (without URL), url: the link
-    const payload: ToolPayload = {
-      name: title || new URL(url).hostname || "Shared Tool",
-      description: description,
-      url: url,
-      tags: extractTags(text),
-    };
-
-    // Send to tools API
-    const result = await sendToToolsApi(payload);
-
-    // Build redirect URL with status
+    // Build redirect URL with pending status (don't send to API yet)
     const params = new URLSearchParams();
     if (title) params.set("shared_title", title);
     if (text) params.set("shared_text", text);
     if (url) params.set("shared_url", url);
-    params.set("shared_status", result.success ? "success" : "error");
-    if (result.error) params.set("shared_error", result.error);
-    if (result.details)
-      params.set("shared_details", result.details.substring(0, 100));
+    params.set("shared_status", "pending");
+    // Pass extracted tags as comma-separated
+    const tags = extractTags(text);
+    if (tags.length > 0) params.set("shared_tags", tags.join(","));
 
     const redirectUrl = new URL("/", request.url);
     redirectUrl.search = params.toString();
@@ -237,30 +132,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
-    // Clean description by removing the URL from text
-    const description = removeUrlFromText(text, url) || title || "";
-
-    // Build the payload for the tools API
-    // name: the page/app title, description: shared text (without URL), url: the link
-    const payload: ToolPayload = {
-      name: title || new URL(url).hostname || "Shared Tool",
-      description: description,
-      url: url,
-      tags: extractTags(text),
-    };
-
-    // Send to tools API
-    const result = await sendToToolsApi(payload);
-
-    // Build redirect URL with status
+    // Build redirect URL with pending status (don't send to API yet)
     const params = new URLSearchParams();
     if (title) params.set("shared_title", title);
     if (text) params.set("shared_text", text);
     if (url) params.set("shared_url", url);
-    params.set("shared_status", result.success ? "success" : "error");
-    if (result.error) params.set("shared_error", result.error);
-    if (result.details)
-      params.set("shared_details", result.details.substring(0, 100));
+    params.set("shared_status", "pending");
+    // Pass extracted tags as comma-separated
+    const tags = extractTags(text);
+    if (tags.length > 0) params.set("shared_tags", tags.join(","));
 
     const redirectUrl = new URL("/", request.url);
     redirectUrl.search = params.toString();
