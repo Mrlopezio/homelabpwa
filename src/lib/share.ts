@@ -42,7 +42,9 @@ export async function share(data: ShareData): Promise<boolean> {
   }
 }
 
-export function parseSharedContent(searchParams: URLSearchParams): ShareData | null {
+export function parseSharedContent(
+  searchParams: URLSearchParams
+): ShareData | null {
   const title = searchParams.get("shared_title");
   const text = searchParams.get("shared_text");
   const url = searchParams.get("shared_url");
