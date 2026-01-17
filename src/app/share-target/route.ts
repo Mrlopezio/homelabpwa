@@ -99,36 +99,73 @@ function extractTags(text: string | null): string[] {
   return [];
 }
 
+function extractUrlFromText(text: string | null): string | null {
+  if (!text) return null;
+
+  // Match URLs in the text
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  const matches = text.match(urlRegex);
+
+  if (matches && matches.length > 0) {
+    // Return the first URL found, cleaned up
+    return matches[0].replace(/[.,;:!?)]+$/, ""); // Remove trailing punctuation
+  }
+
+  return null;
+}
+
+function removeUrlFromText(text: string | null, url: string | null): string {
+  if (!text) return "";
+  if (!url) return text;
+
+  // Remove the URL from text to get clean description
+  return text.replace(url, "").trim();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
     const title = formData.get("title") as string | null;
     const text = formData.get("text") as string | null;
-    const url = formData.get("url") as string | null;
+    const urlField = formData.get("url") as string | null;
 
-    console.log("[share-target] Received share (POST):", { title, text, url });
+    // Try to get URL from the url field, or extract it from text
+    const url = urlField || extractUrlFromText(text);
+
+    console.log("[share-target] Received share (POST):", {
+      title,
+      text,
+      urlField,
+      extractedUrl: url,
+    });
 
     // URL is required by the API
     if (!url) {
-      console.error("[share-target] No URL provided");
+      console.error("[share-target] No URL provided or found in text");
       const params = new URLSearchParams();
       if (title) params.set("shared_title", title);
       if (text) params.set("shared_text", text);
       params.set("shared_status", "error");
       params.set("shared_error", "MISSING_URL");
-      params.set("shared_details", "URL is required to save a tool");
+      params.set(
+        "shared_details",
+        "No URL found. Share a link to save a tool."
+      );
 
       const redirectUrl = new URL("/", request.url);
       redirectUrl.search = params.toString();
       return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
+    // Clean description by removing the URL from text
+    const description = removeUrlFromText(text, url) || title || "";
+
     // Build the payload for the tools API
-    // name: the page/app title, description: shared text, url: the link
+    // name: the page/app title, description: shared text (without URL), url: the link
     const payload: ToolPayload = {
       name: title || new URL(url).hostname || "Shared Tool",
-      description: text || title || "",
+      description: description,
       url: url,
       tags: extractTags(text),
     };
@@ -170,30 +207,44 @@ export async function GET(request: NextRequest) {
 
     const title = searchParams.get("title");
     const text = searchParams.get("text");
-    const url = searchParams.get("url");
+    const urlField = searchParams.get("url");
 
-    console.log("[share-target] Received share (GET):", { title, text, url });
+    // Try to get URL from the url field, or extract it from text
+    const url = urlField || extractUrlFromText(text);
+
+    console.log("[share-target] Received share (GET):", {
+      title,
+      text,
+      urlField,
+      extractedUrl: url,
+    });
 
     // URL is required by the API
     if (!url) {
-      console.error("[share-target] No URL provided");
+      console.error("[share-target] No URL provided or found in text");
       const params = new URLSearchParams();
       if (title) params.set("shared_title", title);
       if (text) params.set("shared_text", text);
       params.set("shared_status", "error");
       params.set("shared_error", "MISSING_URL");
-      params.set("shared_details", "URL is required to save a tool");
+      params.set(
+        "shared_details",
+        "No URL found. Share a link to save a tool."
+      );
 
       const redirectUrl = new URL("/", request.url);
       redirectUrl.search = params.toString();
       return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
+    // Clean description by removing the URL from text
+    const description = removeUrlFromText(text, url) || title || "";
+
     // Build the payload for the tools API
-    // name: the page/app title, description: shared text, url: the link
+    // name: the page/app title, description: shared text (without URL), url: the link
     const payload: ToolPayload = {
       name: title || new URL(url).hostname || "Shared Tool",
-      description: text || title || "",
+      description: description,
       url: url,
       tags: extractTags(text),
     };

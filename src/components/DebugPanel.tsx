@@ -13,12 +13,23 @@ interface DebugInfo {
   timestamp: string;
 }
 
+interface SharePayload {
+  title?: string;
+  text?: string;
+  url?: string;
+}
+
 interface DebugPanelProps {
   lastError?: string | null;
   lastApiResponse?: string | null;
+  sharePayload?: SharePayload | null;
 }
 
-export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
+export function DebugPanel({
+  lastError,
+  lastApiResponse,
+  sharePayload,
+}: DebugPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [envCheck, setEnvCheck] = useState<{
@@ -33,8 +44,10 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
         window.matchMedia("(display-mode: standalone)").matches ||
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (navigator as any).standalone === true,
-      serviceWorker: "serviceWorker" in navigator ? "supported" : "not-supported",
-      notification: "Notification" in window ? Notification.permission : "not-supported",
+      serviceWorker:
+        "serviceWorker" in navigator ? "supported" : "not-supported",
+      notification:
+        "Notification" in window ? Notification.permission : "not-supported",
       share: !!navigator.share,
       shareTarget: true, // Assumed if manifest is configured
       online: navigator.onLine,
@@ -54,9 +67,11 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
     setDebugInfo(info);
 
     // Listen for online/offline
-    const handleOnline = () => setDebugInfo((prev) => prev ? { ...prev, online: true } : prev);
-    const handleOffline = () => setDebugInfo((prev) => prev ? { ...prev, online: false } : prev);
-    
+    const handleOnline = () =>
+      setDebugInfo((prev) => (prev ? { ...prev, online: true } : prev));
+    const handleOffline = () =>
+      setDebugInfo((prev) => (prev ? { ...prev, online: false } : prev));
+
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
@@ -116,17 +131,27 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
 
         {/* System Info */}
         <section className="mb-4">
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">System Info</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">
+            System Info
+          </h3>
           <div className="space-y-1 bg-zinc-800 p-2 rounded">
             <div className="flex justify-between">
               <span>Online:</span>
-              <span className={debugInfo?.online ? "text-green-400" : "text-red-400"}>
+              <span
+                className={
+                  debugInfo?.online ? "text-green-400" : "text-red-400"
+                }
+              >
                 {debugInfo?.online ? "Yes" : "No"}
               </span>
             </div>
             <div className="flex justify-between">
               <span>Standalone Mode:</span>
-              <span className={debugInfo?.standalone ? "text-green-400" : "text-yellow-400"}>
+              <span
+                className={
+                  debugInfo?.standalone ? "text-green-400" : "text-yellow-400"
+                }
+              >
                 {debugInfo?.standalone ? "Yes (PWA)" : "No (Browser)"}
               </span>
             </div>
@@ -160,7 +185,9 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
             </div>
             <div className="flex justify-between">
               <span>Web Share API:</span>
-              <span className={debugInfo?.share ? "text-green-400" : "text-red-400"}>
+              <span
+                className={debugInfo?.share ? "text-green-400" : "text-red-400"}
+              >
                 {debugInfo?.share ? "Supported" : "Not Supported"}
               </span>
             </div>
@@ -169,7 +196,9 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
 
         {/* Environment Check */}
         <section className="mb-4">
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">Environment</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">
+            Environment
+          </h3>
           <div className="space-y-2">
             <button
               onClick={checkEnvVariables}
@@ -182,18 +211,32 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
               <div className="bg-zinc-800 p-2 rounded space-y-1">
                 <div className="flex justify-between">
                   <span>TOOLS_API_URL:</span>
-                  <span className={envCheck.result.hasApiUrl ? "text-green-400" : "text-red-400"}>
+                  <span
+                    className={
+                      envCheck.result.hasApiUrl
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
                     {envCheck.result.hasApiUrl ? "Set" : "Missing"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>TOOLS_API_KEY:</span>
-                  <span className={envCheck.result.hasApiKey ? "text-green-400" : "text-red-400"}>
+                  <span
+                    className={
+                      envCheck.result.hasApiKey
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }
+                  >
                     {envCheck.result.hasApiKey ? "Set" : "Missing"}
                   </span>
                 </div>
                 {envCheck.result.error && (
-                  <div className="text-red-400 break-all">{envCheck.result.error}</div>
+                  <div className="text-red-400 break-all">
+                    {envCheck.result.error}
+                  </div>
                 )}
               </div>
             )}
@@ -206,18 +249,59 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
           </div>
         </section>
 
+        {/* Received Share Payload */}
+        {sharePayload && (
+          <section className="mb-4">
+            <h3 className="text-sm font-semibold text-cyan-400 mb-2">
+              Received Share Payload
+            </h3>
+            <div className="bg-zinc-800 p-2 rounded space-y-2">
+              <div>
+                <span className="text-zinc-500">title:</span>
+                <div className="text-cyan-300 break-all">
+                  {sharePayload.title || (
+                    <span className="text-zinc-600">(empty)</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="text-zinc-500">text:</span>
+                <div className="text-cyan-300 break-all">
+                  {sharePayload.text || (
+                    <span className="text-zinc-600">(empty)</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="text-zinc-500">url:</span>
+                <div className="text-cyan-300 break-all">
+                  {sharePayload.url || (
+                    <span className="text-zinc-600">(empty)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Last Error */}
         {lastError && (
           <section className="mb-4">
-            <h3 className="text-sm font-semibold text-red-400 mb-2">Last Error</h3>
-            <div className="bg-red-900/50 p-2 rounded break-all">{lastError}</div>
+            <h3 className="text-sm font-semibold text-red-400 mb-2">
+              Last Error
+            </h3>
+            <div className="bg-red-900/50 p-2 rounded break-all">
+              {lastError}
+            </div>
           </section>
         )}
 
         {/* Last API Response */}
         {lastApiResponse && (
           <section className="mb-4">
-            <h3 className="text-sm font-semibold text-zinc-400 mb-2">Last API Response</h3>
+            <h3 className="text-sm font-semibold text-zinc-400 mb-2">
+              Last API Response
+            </h3>
             <div className="bg-zinc-800 p-2 rounded break-all whitespace-pre-wrap">
               {lastApiResponse}
             </div>
@@ -226,7 +310,9 @@ export function DebugPanel({ lastError, lastApiResponse }: DebugPanelProps) {
 
         {/* User Agent */}
         <section className="mb-4">
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">User Agent</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">
+            User Agent
+          </h3>
           <div className="bg-zinc-800 p-2 rounded break-all text-[10px]">
             {debugInfo?.userAgent}
           </div>

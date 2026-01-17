@@ -312,12 +312,21 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.2</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.3.4</p>
       </main>
 
       <DebugPanel
         lastError={sharedContent?.error}
         lastApiResponse={sharedContent?.details}
+        sharePayload={
+          sharedContent
+            ? {
+                title: sharedContent.title,
+                text: sharedContent.text,
+                url: sharedContent.url,
+              }
+            : null
+        }
       />
     </div>
   );
