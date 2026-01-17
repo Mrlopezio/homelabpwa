@@ -171,8 +171,8 @@ function HomeContent() {
               sharedContent.status === "error"
                 ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
                 : sharedContent.status === "success"
-                  ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
-                  : "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
+                ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                : "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800"
             }`}
           >
             <div className="flex justify-between items-start mb-2">
@@ -181,15 +181,15 @@ function HomeContent() {
                   sharedContent.status === "error"
                     ? "text-red-800 dark:text-red-200"
                     : sharedContent.status === "success"
-                      ? "text-green-800 dark:text-green-200"
-                      : "text-blue-800 dark:text-blue-200"
+                    ? "text-green-800 dark:text-green-200"
+                    : "text-blue-800 dark:text-blue-200"
                 }`}
               >
                 {sharedContent.status === "error"
                   ? "Failed to Save Tool"
                   : sharedContent.status === "success"
-                    ? "Tool Saved Successfully"
-                    : "Shared Content Received"}
+                  ? "Tool Saved Successfully"
+                  : "Shared Content Received"}
               </h2>
               <button
                 onClick={handleDismissShared}
@@ -197,8 +197,8 @@ function HomeContent() {
                   sharedContent.status === "error"
                     ? "text-red-600 dark:text-red-400"
                     : sharedContent.status === "success"
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-blue-600 dark:text-blue-400"
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-blue-600 dark:text-blue-400"
                 }`}
               >
                 ✕
@@ -209,8 +209,8 @@ function HomeContent() {
                 sharedContent.status === "error"
                   ? "text-red-700 dark:text-red-300"
                   : sharedContent.status === "success"
-                    ? "text-green-700 dark:text-green-300"
-                    : "text-blue-700 dark:text-blue-300"
+                  ? "text-green-700 dark:text-green-300"
+                  : "text-blue-700 dark:text-blue-300"
               }`}
             >
               {sharedContent.title && (
@@ -294,6 +294,8 @@ function HomeContent() {
             <li>✓ Offline Support</li>
           </ul>
         </div>
+
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.2.0</p>
       </main>
     </div>
   );

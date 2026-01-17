@@ -12,15 +12,20 @@ interface ToolPayload {
 
 async function sendToToolsApi(payload: ToolPayload): Promise<boolean> {
   const apiKey = process.env.TOOLS_API_KEY;
+  const apiUrl = process.env.TOOLS_API_URL;
 
   if (!apiKey) {
     console.error("TOOLS_API_KEY not configured");
     return false;
   }
 
+  if (!apiUrl) {
+    console.error("TOOLS_API_URL not configured");
+    return false;
+  }
+
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/tools`, {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -30,7 +35,8 @@ async function sendToToolsApi(payload: ToolPayload): Promise<boolean> {
     });
 
     if (!response.ok) {
-      console.error("Failed to send to tools API:", response.status);
+      const errorText = await response.text().catch(() => "Unknown error");
+      console.error("Failed to send to tools API:", response.status, errorText);
       return false;
     }
 
