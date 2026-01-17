@@ -29,17 +29,25 @@ async function sendToToolsApi(payload: ToolPayload): Promise<ApiResult> {
 
   if (!apiKey) {
     console.error("[share-target] TOOLS_API_KEY not configured");
-    return { success: false, error: "CONFIG_ERROR", details: "TOOLS_API_KEY not set" };
+    return {
+      success: false,
+      error: "CONFIG_ERROR",
+      details: "TOOLS_API_KEY not set",
+    };
   }
 
   if (!apiUrl) {
     console.error("[share-target] TOOLS_API_URL not configured");
-    return { success: false, error: "CONFIG_ERROR", details: "TOOLS_API_URL not set" };
+    return {
+      success: false,
+      error: "CONFIG_ERROR",
+      details: "TOOLS_API_URL not set",
+    };
   }
 
   try {
     console.log("[share-target] Fetching:", apiUrl);
-    
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -52,7 +60,9 @@ async function sendToToolsApi(payload: ToolPayload): Promise<ApiResult> {
     console.log("[share-target] Response status:", response.status);
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Could not read response");
+      const errorText = await response
+        .text()
+        .catch(() => "Could not read response");
       console.error("[share-target] API error:", response.status, errorText);
       return {
         success: false,
@@ -117,7 +127,8 @@ export async function POST(request: NextRequest) {
     if (url) params.set("shared_url", url);
     params.set("shared_status", result.success ? "success" : "error");
     if (result.error) params.set("shared_error", result.error);
-    if (result.details) params.set("shared_details", result.details.substring(0, 100));
+    if (result.details)
+      params.set("shared_details", result.details.substring(0, 100));
 
     const redirectUrl = new URL("/", request.url);
     redirectUrl.search = params.toString();
@@ -127,7 +138,9 @@ export async function POST(request: NextRequest) {
     console.error("[share-target] Unexpected error:", error);
     const errorMsg = error instanceof Error ? error.message : String(error);
     const redirectUrl = new URL(
-      `/?shared_status=error&shared_error=UNEXPECTED&shared_details=${encodeURIComponent(errorMsg.substring(0, 100))}`,
+      `/?shared_status=error&shared_error=UNEXPECTED&shared_details=${encodeURIComponent(
+        errorMsg.substring(0, 100)
+      )}`,
       request.url
     );
     return NextResponse.redirect(redirectUrl, { status: 303 });
@@ -135,37 +148,50 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  // Handle GET requests for share target (for simpler shares without files)
-  const searchParams = request.nextUrl.searchParams;
+  try {
+    // Handle GET requests for share target (for simpler shares without files)
+    const searchParams = request.nextUrl.searchParams;
 
-  const title = searchParams.get("title");
-  const text = searchParams.get("text");
-  const url = searchParams.get("url");
+    const title = searchParams.get("title");
+    const text = searchParams.get("text");
+    const url = searchParams.get("url");
 
-  console.log("Received share (GET):", { title, text, url });
+    console.log("[share-target] Received share (GET):", { title, text, url });
 
-  // Build the payload for the tools API
-  const payload: ToolPayload = {
-    name: title || text?.slice(0, 50) || "Shared Item",
-    description: text || title || "",
-    url: url || "",
-    tags: extractTags(text),
-  };
+    // Build the payload for the tools API
+    const payload: ToolPayload = {
+      name: title || text?.slice(0, 50) || "Shared Item",
+      description: text || title || "",
+      url: url || "",
+      tags: extractTags(text),
+    };
 
-  // Send to tools API
-  const result = await sendToToolsApi(payload);
+    // Send to tools API
+    const result = await sendToToolsApi(payload);
 
-  // Build redirect URL with status
-  const params = new URLSearchParams();
-  if (title) params.set("shared_title", title);
-  if (text) params.set("shared_text", text);
-  if (url) params.set("shared_url", url);
-  params.set("shared_status", result.success ? "success" : "error");
-  if (result.error) params.set("shared_error", result.error);
-  if (result.details) params.set("shared_details", result.details.substring(0, 100));
+    // Build redirect URL with status
+    const params = new URLSearchParams();
+    if (title) params.set("shared_title", title);
+    if (text) params.set("shared_text", text);
+    if (url) params.set("shared_url", url);
+    params.set("shared_status", result.success ? "success" : "error");
+    if (result.error) params.set("shared_error", result.error);
+    if (result.details)
+      params.set("shared_details", result.details.substring(0, 100));
 
-  const redirectUrl = new URL("/", request.url);
-  redirectUrl.search = params.toString();
+    const redirectUrl = new URL("/", request.url);
+    redirectUrl.search = params.toString();
 
-  return NextResponse.redirect(redirectUrl, { status: 303 });
+    return NextResponse.redirect(redirectUrl, { status: 303 });
+  } catch (error) {
+    console.error("[share-target] Unexpected error (GET):", error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const redirectUrl = new URL(
+      `/?shared_status=error&shared_error=UNEXPECTED&shared_details=${encodeURIComponent(
+        errorMsg.substring(0, 100)
+      )}`,
+      request.url
+    );
+    return NextResponse.redirect(redirectUrl, { status: 303 });
+  }
 }

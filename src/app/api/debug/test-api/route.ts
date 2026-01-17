@@ -13,12 +13,12 @@ export async function GET() {
     });
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
     // Try a simple request to check connectivity
     // Using HEAD or GET to test without creating data
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const response = await fetch(apiUrl, {
       method: "OPTIONS",
       headers: {
@@ -26,8 +26,6 @@ export async function GET() {
       },
       signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     return NextResponse.json({
       success: true,
@@ -41,5 +39,7 @@ export async function GET() {
       error: error instanceof Error ? error.message : String(error),
       errorType: error instanceof Error ? error.name : "Unknown",
     });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
