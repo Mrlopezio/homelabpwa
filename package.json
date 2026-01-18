@@ -1,6 +1,6 @@
 {
   "name": "homelabpwa",
-  "version": "0.3.4",
+  "version": "0.5",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
