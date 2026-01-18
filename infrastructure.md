@@ -6,15 +6,15 @@ HomeLab PWA is a Next.js 16 Progressive Web App with share target functionality,
 
 ## Tech Stack
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 16.1.3 | React framework with App Router |
-| React | 19.2.3 | UI library |
-| TypeScript | ^5 | Type safety |
-| Tailwind CSS | ^4 | Utility-first styling |
-| next-pwa | ^5.6.0 | PWA service worker generation |
-| sharp | ^0.34.5 | Icon generation (dev) |
-| pnpm | latest | Package manager |
+| Technology   | Version | Purpose                         |
+| ------------ | ------- | ------------------------------- |
+| Next.js      | 16.1.3  | React framework with App Router |
+| React        | 19.2.3  | UI library                      |
+| TypeScript   | ^5      | Type safety                     |
+| Tailwind CSS | ^4      | Utility-first styling           |
+| next-pwa     | ^5.6.0  | PWA service worker generation   |
+| sharp        | ^0.34.5 | Icon generation (dev)           |
+| pnpm         | latest  | Package manager                 |
 
 ## Project Structure
 
@@ -45,8 +45,6 @@ homelabpwa/
 │   │   │
 │   │   └── api/                     # API Routes
 │   │       ├── tools/
-│   │       │   ├── fetch-meta/
-│   │       │   │   └── route.ts     # Fetches URL metadata from external API
 │   │       │   └── send/
 │   │       │       └── route.ts     # Sends tool data to external API
 │   │       └── debug/
@@ -82,7 +80,9 @@ homelabpwa/
 ### Configuration Files
 
 #### `next.config.ts`
+
 Configures Next.js with the next-pwa plugin for service worker generation:
+
 - Outputs service worker to `/public`
 - Auto-registers service worker
 - Enables skip waiting for immediate updates
@@ -90,14 +90,18 @@ Configures Next.js with the next-pwa plugin for service worker generation:
 - Imports custom service worker extensions
 
 #### `tsconfig.json`
+
 TypeScript configuration with:
+
 - ES2017 target
 - Bundler module resolution
 - Path alias `@/*` → `./src/*`
 - Next.js plugin integration
 
 #### `public/manifest.json`
+
 PWA manifest defining:
+
 - App name, icons, colors
 - Display mode: standalone
 - Share target configuration (POST with multipart/form-data)
@@ -106,13 +110,17 @@ PWA manifest defining:
 ### Application Files
 
 #### `src/app/layout.tsx`
+
 Root layout providing:
+
 - PWA metadata (manifest link, apple-web-app settings)
 - Viewport configuration
 - Geist font family (sans and mono)
 
 #### `src/app/page.tsx`
+
 Main application page with:
+
 - PWA install prompt handling
 - Share API integration (outgoing shares)
 - Share target content display (incoming shares)
@@ -121,7 +129,9 @@ Main application page with:
 - Integration with external Tools API
 
 #### `src/app/share-target/route.ts`
+
 Handles incoming shared content:
+
 - POST: Receives multipart form data from share sheet
 - GET: Handles simple URL shares
 - Extracts hashtags from shared text
@@ -130,20 +140,17 @@ Handles incoming shared content:
 
 ### API Routes
 
-#### `src/app/api/tools/fetch-meta/route.ts`
-Proxies metadata fetching:
-- Calls external API to fetch URL metadata
-- Returns title, description, logo, screenshot
-- Requires `TOOLS_API_KEY` and `TOOLS_API_URL`
-
 #### `src/app/api/tools/send/route.ts`
+
 Sends tool data to external API:
+
 - Accepts URL, category_id, tags, is_favorite
 - Validates URL is provided
 - Proxies to configured Tools API
 - Returns full tool object with auto-fetched metadata
 
 **Request Schema:**
+
 ```json
 {
   "url": "https://example.com",
@@ -154,6 +161,7 @@ Sends tool data to external API:
 ```
 
 **Response Schema:**
+
 ```json
 {
   "id": 1,
@@ -175,26 +183,34 @@ Sends tool data to external API:
 ```
 
 #### `src/app/api/debug/env-check/route.ts`
+
 Debug endpoint for environment validation:
+
 - Checks presence of API credentials
 - Validates URL format
 
 #### `src/app/api/debug/test-api/route.ts`
+
 Tests external API connectivity:
+
 - Sends OPTIONS request to Tools API
 - Returns connection status
 
 ### Library Files
 
 #### `src/lib/share.ts`
+
 Web Share API utilities:
+
 - `canShare()`: Check share support
 - `canShareFiles()`: Check file sharing support
 - `share(data)`: Share content
 - `parseSharedContent(params)`: Parse URL params
 
 #### `src/lib/push-notifications.ts`
+
 Push notification utilities:
+
 - `subscribeToPushNotifications(vapidKey)`: Subscribe to push
 - `unsubscribeFromPushNotifications()`: Unsubscribe
 - `getPushSubscription()`: Get current subscription
@@ -202,7 +218,9 @@ Push notification utilities:
 ### Service Worker
 
 #### `public/custom-sw.js`
+
 Custom service worker extensions:
+
 - Push event handler (display notifications)
 - Notification click handler (open/focus app)
 - Notification close handler (logging)
@@ -210,7 +228,9 @@ Custom service worker extensions:
 ### Components
 
 #### `src/components/DebugPanel.tsx`
+
 Debug overlay component showing:
+
 - System info (online status, standalone mode, SW status)
 - Environment variable status
 - Received share payload
@@ -219,102 +239,117 @@ Debug overlay component showing:
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `TOOLS_API_URL` | Yes | External API endpoint for tools |
-| `TOOLS_API_KEY` | Yes | API key for authentication |
+| Variable        | Required | Description                     |
+| --------------- | -------- | ------------------------------- |
+| `TOOLS_API_URL` | Yes      | External API endpoint for tools |
+| `TOOLS_API_KEY` | Yes      | API key for authentication      |
 
 ## NPM Scripts
 
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `next dev --turbopack` | Development server with Turbopack |
-| `build` | `next build --webpack` | Production build (webpack for PWA) |
-| `start` | `next start` | Start production server |
-| `lint` | `eslint` | Run ESLint |
-| `generate-icons` | `node scripts/generate-icons.js` | Generate PWA icons |
+| Script           | Command                          | Description                        |
+| ---------------- | -------------------------------- | ---------------------------------- |
+| `dev`            | `next dev --turbopack`           | Development server with Turbopack  |
+| `build`          | `next build --webpack`           | Production build (webpack for PWA) |
+| `start`          | `next start`                     | Start production server            |
+| `lint`           | `eslint`                         | Run ESLint                         |
+| `generate-icons` | `node scripts/generate-icons.js` | Generate PWA icons                 |
 
 ## PWA Features
 
 ### Installable
+
 - Full manifest.json configuration
 - Service worker auto-registration
 - Install prompt handling in UI
 
 ### Share Target (Incoming)
+
 - Configured in manifest.json
 - Handles POST with multipart/form-data
 - Supports title, text, URL, and files
 - Extracts hashtags and URLs from text
 
 ### Share Sheet (Outgoing)
+
 - Web Share API integration
 - Fallback handling for unsupported browsers
 
 ### Push Notifications
+
 - VAPID key authentication
 - Custom notification handling in service worker
 - Click-to-open functionality
 
 ### Offline Support
+
 - Service worker caching via next-pwa/Workbox
 - Network status detection
 
 ## Data Flow
 
 ### Share Target Flow
+
 ```
 1. User shares URL from another app
 2. Android/Browser calls /share-target (POST/GET)
 3. Route extracts URL, title, text, hashtags
 4. Redirects to / with query params (status: pending)
-5. Home page fetches metadata via /api/tools/fetch-meta (preview only)
-6. User reviews preview card
-7. User clicks "Save Tool"
-8. App sends {url, category_id, tags, is_favorite} to /api/tools/send
-9. API proxies to external Tools API (which auto-fetches metadata)
-10. API returns full tool object with name, description, logo, etc.
+5. Home page shows preview card with URL and tags
+6. User clicks "Save Tool"
+7. App sends {url, category_id, tags, is_favorite} to /api/tools/send
+8. API proxies to external Tools API
+9. External API returns tool object (metadata_status: pending)
+10. Metadata (title, description, logo, screenshot) fetched asynchronously
 11. Success card displays saved tool details
 ```
 
 ### API Proxy Pattern
+
 ```
 Client → /api/tools/send → External Tools API
          {url, category_id,      (adds X-API-Key header)
           tags, is_favorite}
-                              ← Returns full tool object
+                              ← Returns tool (metadata fetched async)
 ```
 
 ## Build & Deployment
 
 ### Development
+
 ```bash
 pnpm dev
 ```
+
 - Runs with Turbopack (fast refresh)
 - PWA disabled (no service worker)
 
 ### Production Build
+
 ```bash
 pnpm build
 ```
+
 - Uses webpack (required for next-pwa)
 - Generates service worker in /public
 - Outputs to .next/
 
 ### Production Start
+
 ```bash
 pnpm start
 ```
+
 - Serves production build
 - Service worker active
 
 ## Icon Generation
 
 Generate new icons from SVG template:
+
 ```bash
 pnpm generate-icons
 ```
+
 - Creates icons in all required sizes
 - Uses sharp for PNG conversion
 - Outputs to public/icons/

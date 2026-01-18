@@ -40,10 +40,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!payload.url) {
-      return NextResponse.json(
-        { error: "URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
     const apiKey = process.env.TOOLS_API_KEY;
@@ -81,7 +78,9 @@ export async function POST(request: NextRequest) {
     console.log("[tools/send] Response status:", response.status);
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "Could not read response");
+      const errorText = await response
+        .text()
+        .catch(() => "Could not read response");
       console.error("[tools/send] API error:", response.status, errorText);
       return NextResponse.json(
         { error: `HTTP_${response.status}`, details: errorText },

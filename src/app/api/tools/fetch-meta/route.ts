@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
     const body: FetchMetaRequest = await request.json();
 
     if (!body.url) {
-      return NextResponse.json(
-        { error: "URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
     const apiKey = process.env.TOOLS_API_KEY;
