@@ -138,9 +138,41 @@ Proxies metadata fetching:
 
 #### `src/app/api/tools/send/route.ts`
 Sends tool data to external API:
-- Accepts name, description, URL, tags
-- Validates required fields
+- Accepts URL, category_id, tags, is_favorite
+- Validates URL is provided
 - Proxies to configured Tools API
+- Returns full tool object with auto-fetched metadata
+
+**Request Schema:**
+```json
+{
+  "url": "https://example.com",
+  "category_id": 0,
+  "tags": ["string"],
+  "is_favorite": false
+}
+```
+
+**Response Schema:**
+```json
+{
+  "id": 1,
+  "name": "Tool Name",
+  "description": "Auto-fetched description",
+  "url": "https://example.com",
+  "logo_url": "https://...",
+  "screenshot_url": "https://...",
+  "tags": ["tag1", "tag2"],
+  "category_id": 1,
+  "category_name": "Category",
+  "category_color": "#3b82f6",
+  "is_favorite": false,
+  "display_order": 0,
+  "metadata_status": "complete",
+  "created_at": "2026-01-18T12:50:16.623Z",
+  "updated_at": "2026-01-18T12:50:16.623Z"
+}
+```
 
 #### `src/app/api/debug/env-check/route.ts`
 Debug endpoint for environment validation:
@@ -236,18 +268,21 @@ Debug overlay component showing:
 2. Android/Browser calls /share-target (POST/GET)
 3. Route extracts URL, title, text, hashtags
 4. Redirects to / with query params (status: pending)
-5. Home page fetches metadata via /api/tools/fetch-meta
+5. Home page fetches metadata via /api/tools/fetch-meta (preview only)
 6. User reviews preview card
 7. User clicks "Save Tool"
-8. App sends to /api/tools/send
-9. API proxies to external Tools API
-10. Success/error displayed to user
+8. App sends {url, category_id, tags, is_favorite} to /api/tools/send
+9. API proxies to external Tools API (which auto-fetches metadata)
+10. API returns full tool object with name, description, logo, etc.
+11. Success card displays saved tool details
 ```
 
 ### API Proxy Pattern
 ```
 Client → /api/tools/send → External Tools API
-         (adds X-API-Key header)
+         {url, category_id,      (adds X-API-Key header)
+          tags, is_favorite}
+                              ← Returns full tool object
 ```
 
 ## Build & Deployment

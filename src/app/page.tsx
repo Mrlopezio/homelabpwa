@@ -24,6 +24,24 @@ interface MetaData {
   screenshot_url: string;
 }
 
+interface SavedTool {
+  id: number;
+  name: string;
+  description: string;
+  url: string;
+  logo_url: string;
+  screenshot_url: string;
+  tags: string[];
+  category_id: number;
+  category_name: string;
+  category_color: string;
+  is_favorite: boolean;
+  display_order: number;
+  metadata_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const [isInstallable, setIsInstallable] = useState(false);
@@ -39,6 +57,7 @@ function HomeContent() {
   const [isLoadingMeta, setIsLoadingMeta] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [savedTool, setSavedTool] = useState<SavedTool | null>(null);
 
   useEffect(() => {
     // Check for shared content in URL
@@ -105,12 +124,12 @@ function HomeContent() {
 
     setIsSending(true);
     try {
-      // Build payload using fetched metadata or fallback to shared content
+      // Build payload with new schema - only URL, category_id, tags, is_favorite
       const payload = {
-        name: metaData?.title || sharedContent.title || new URL(sharedContent.url).hostname,
-        description: metaData?.description || sharedContent.text || "",
         url: sharedContent.url,
+        category_id: 0, // Default category
         tags: sharedContent.tags || [],
+        is_favorite: false,
       };
 
       const response = await fetch("/api/tools/send", {
@@ -129,6 +148,8 @@ function HomeContent() {
           details: result.details,
         });
       } else {
+        // Store the saved tool data from API response
+        setSavedTool(result.data);
         setSharedContent({
           ...sharedContent,
           status: "success",
@@ -252,6 +273,7 @@ function HomeContent() {
     setSharedContent(null);
     setMetaData(null);
     setMetaError(null);
+    setSavedTool(null);
     // Clear URL params
     window.history.replaceState({}, "", "/");
   };
@@ -382,66 +404,108 @@ function HomeContent() {
           </div>
         )}
 
-        {/* Success/Error states */}
-        {sharedContent && (sharedContent.status === "success" || sharedContent.status === "error") && (
-          <div
-            className={`w-full p-4 rounded-xl border ${
-              sharedContent.status === "error"
-                ? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
-                : "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
-            }`}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <h2
-                className={`text-sm font-semibold ${
-                  sharedContent.status === "error"
-                    ? "text-red-800 dark:text-red-200"
-                    : "text-green-800 dark:text-green-200"
-                }`}
-              >
-                {sharedContent.status === "error"
-                  ? "Failed to Save Tool"
-                  : "Tool Saved Successfully"}
+        {/* Success state - show saved tool from API response */}
+        {sharedContent && sharedContent.status === "success" && savedTool && (
+          <div className="w-full rounded-xl border bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 overflow-hidden">
+            <div className="flex justify-between items-center p-3 border-b border-green-200 dark:border-green-800">
+              <h2 className="text-sm font-semibold text-green-800 dark:text-green-200">
+                Tool Saved Successfully
               </h2>
               <button
                 onClick={handleDismissShared}
-                className={`hover:opacity-70 ${
-                  sharedContent.status === "error"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-green-600 dark:text-green-400"
-                }`}
+                className="text-green-600 dark:text-green-400 hover:opacity-70"
               >
                 ✕
               </button>
             </div>
-            <div
-              className={`space-y-1 text-sm ${
-                sharedContent.status === "error"
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-green-700 dark:text-green-300"
-              }`}
-            >
-              {sharedContent.title && (
-                <p>
-                  <strong>Name:</strong> {sharedContent.title}
+            <div className="p-4 space-y-3">
+              {/* Header with logo and title */}
+              <div className="flex items-start gap-3">
+                {savedTool.logo_url && (
+                  <img
+                    src={savedTool.logo_url}
+                    alt="Logo"
+                    className="w-12 h-12 rounded-lg object-contain bg-white dark:bg-zinc-800 p-1"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-green-900 dark:text-green-100 truncate">
+                    {savedTool.name}
+                  </h3>
+                  <p className="text-xs text-green-600 dark:text-green-400 truncate">
+                    {savedTool.url}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {savedTool.description && (
+                <p className="text-sm text-green-700 dark:text-green-300 line-clamp-2">
+                  {savedTool.description}
                 </p>
               )}
-              {sharedContent.text && (
-                <p>
-                  <strong>Description:</strong> {sharedContent.text}
-                </p>
+
+              {/* Category badge */}
+              {savedTool.category_name && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className="px-2 py-0.5 text-xs font-medium rounded-full text-white"
+                    style={{ backgroundColor: savedTool.category_color || "#6b7280" }}
+                  >
+                    {savedTool.category_name}
+                  </span>
+                  {savedTool.is_favorite && (
+                    <span className="text-yellow-500">★</span>
+                  )}
+                </div>
               )}
+
+              {/* Tags */}
+              {savedTool.tags && savedTool.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {savedTool.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-xs bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 rounded-full"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Metadata status */}
+              <p className="text-xs text-green-600 dark:text-green-400">
+                ID: {savedTool.id} • Status: {savedTool.metadata_status}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {sharedContent && sharedContent.status === "error" && (
+          <div className="w-full p-4 rounded-xl border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+            <div className="flex justify-between items-start mb-2">
+              <h2 className="text-sm font-semibold text-red-800 dark:text-red-200">
+                Failed to Save Tool
+              </h2>
+              <button
+                onClick={handleDismissShared}
+                className="text-red-600 dark:text-red-400 hover:opacity-70"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-1 text-sm text-red-700 dark:text-red-300">
               {sharedContent.url && (
                 <p>
                   <strong>URL:</strong>{" "}
                   <a href={sharedContent.url} className="underline break-all">
                     {sharedContent.url}
                   </a>
-                </p>
-              )}
-              {sharedContent.filesCount && (
-                <p>
-                  <strong>Files:</strong> {sharedContent.filesCount} file(s)
                 </p>
               )}
               {sharedContent.error && (

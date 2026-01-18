@@ -3,26 +3,45 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 interface ToolPayload {
+  url: string;
+  category_id: number;
+  tags: string[];
+  is_favorite: boolean;
+}
+
+interface ToolResponse {
+  id: number;
   name: string;
   description: string;
   url: string;
+  logo_url: string;
+  screenshot_url: string;
   tags: string[];
+  category_id: number;
+  category_name: string;
+  category_color: string;
+  is_favorite: boolean;
+  display_order: number;
+  metadata_status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const payload: ToolPayload = await request.json();
+    const body = await request.json();
+
+    // Build the payload with the new schema
+    const payload: ToolPayload = {
+      url: body.url,
+      category_id: body.category_id ?? 0,
+      tags: body.tags ?? [],
+      is_favorite: body.is_favorite ?? false,
+    };
 
     if (!payload.url) {
       return NextResponse.json(
         { error: "URL is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!payload.name) {
-      return NextResponse.json(
-        { error: "Name is required" },
         { status: 400 }
       );
     }
@@ -70,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const responseData = await response.json().catch(() => ({}));
+    const responseData: ToolResponse = await response.json().catch(() => ({}));
     console.log("[tools/send] Success:", responseData);
 
     return NextResponse.json({ success: true, data: responseData });
