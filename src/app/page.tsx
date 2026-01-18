@@ -113,7 +113,9 @@ function HomeContent() {
       setMetaData(data);
     } catch (error) {
       console.error("Failed to fetch metadata:", error);
-      setMetaError(error instanceof Error ? error.message : "Failed to fetch metadata");
+      setMetaError(
+        error instanceof Error ? error.message : "Failed to fetch metadata"
+      );
     } finally {
       setIsLoadingMeta(false);
     }
@@ -308,7 +310,9 @@ function HomeContent() {
             {isLoadingMeta ? (
               <div className="p-6 text-center">
                 <div className="inline-block w-6 h-6 border-2 border-zinc-300 border-t-blue-500 rounded-full animate-spin" />
-                <p className="mt-2 text-sm text-zinc-500">Loading metadata...</p>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Loading metadata...
+                </p>
               </div>
             ) : metaError ? (
               <div className="p-4">
@@ -316,8 +320,14 @@ function HomeContent() {
                   Failed to load metadata: {metaError}
                 </div>
                 <div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  <p><strong>URL:</strong> {sharedContent.url}</p>
-                  {sharedContent.title && <p><strong>Title:</strong> {sharedContent.title}</p>}
+                  <p>
+                    <strong>URL:</strong> {sharedContent.url}
+                  </p>
+                  {sharedContent.title && (
+                    <p>
+                      <strong>Title:</strong> {sharedContent.title}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : metaData ? (
@@ -338,7 +348,9 @@ function HomeContent() {
                     <h3 className="font-semibold text-zinc-900 dark:text-white truncate">
                       {metaData.title || sharedContent.title || "Untitled"}
                     </h3>
-                    <p className="text-xs text-zinc-500 truncate">{metaData.url}</p>
+                    <p className="text-xs text-zinc-500 truncate">
+                      {metaData.url}
+                    </p>
                   </div>
                 </div>
 
@@ -379,8 +391,14 @@ function HomeContent() {
               </div>
             ) : (
               <div className="p-4 space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                <p><strong>URL:</strong> {sharedContent.url}</p>
-                {sharedContent.title && <p><strong>Title:</strong> {sharedContent.title}</p>}
+                <p>
+                  <strong>URL:</strong> {sharedContent.url}
+                </p>
+                {sharedContent.title && (
+                  <p>
+                    <strong>Title:</strong> {sharedContent.title}
+                  </p>
+                )}
               </div>
             )}
 
@@ -453,7 +471,9 @@ function HomeContent() {
                 <div className="flex items-center gap-2">
                   <span
                     className="px-2 py-0.5 text-xs font-medium rounded-full text-white"
-                    style={{ backgroundColor: savedTool.category_color || "#6b7280" }}
+                    style={{
+                      backgroundColor: savedTool.category_color || "#6b7280",
+                    }}
                   >
                     {savedTool.category_name}
                   </span>
@@ -577,7 +597,9 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">v0.4</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">
+          {process.env.NEXT_PUBLIC_VERSION}
+        </p>
       </main>
 
       <DebugPanel
