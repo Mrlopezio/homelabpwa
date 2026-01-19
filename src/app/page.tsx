@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { DebugPanel } from "@/components/DebugPanel";
-import { useAuth, User } from "@/lib/auth-context";
 
 interface SharedContent {
   title?: string;
@@ -37,13 +36,6 @@ interface SavedTool {
 
 function HomeContent() {
   const searchParams = useSearchParams();
-  const {
-    user,
-    isAuthenticated,
-    isLoading: authLoading,
-    login,
-    logout,
-  } = useAuth();
   const [isInstallable, setIsInstallable] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<
@@ -301,17 +293,12 @@ function HomeContent() {
       <main className="flex min-h-screen w-full max-w-md flex-col items-center justify-center gap-8 p-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-black dark:text-white mb-2">
-            MrLopez Share Tools
+            HomeLab
           </h1>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Progressive Web App
+          </p>
         </div>
-
-        <UserStatusBar
-          authLoading={authLoading}
-          isAuthenticated={isAuthenticated}
-          user={user}
-          logout={logout}
-          login={login}
-        />
 
         {/* Pending state - show preview card with URL */}
         {sharedContent && sharedContent.status === "pending" && (
@@ -528,7 +515,7 @@ function HomeContent() {
           {isInstallable && (
             <button
               onClick={handleInstall}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-blue-600/60 px-5 text-white font-medium transition-colors hover:bg-blue-700"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-blue-600 px-5 text-white font-medium transition-colors hover:bg-blue-700"
             >
               Install App
             </button>
@@ -537,7 +524,7 @@ function HomeContent() {
           {isShareSupported && (
             <button
               onClick={handleShare}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-green-600/60 px-5 text-white font-medium transition-colors hover:bg-green-700"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-green-600 px-5 text-white font-medium transition-colors hover:bg-green-700"
             >
               Share App
             </button>
@@ -546,7 +533,7 @@ function HomeContent() {
           {notificationPermission === "default" && (
             <button
               onClick={handleEnableNotifications}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-purple-600/60 px-5 text-white font-medium transition-colors hover:bg-purple-700"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-purple-600 px-5 text-white font-medium transition-colors hover:bg-purple-700"
             >
               Enable Notifications
             </button>
@@ -555,14 +542,14 @@ function HomeContent() {
           {notificationPermission === "granted" && (
             <button
               onClick={handleTestNotification}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-purple-600/60 px-5 text-white font-medium transition-colors hover:bg-purple-700"
+              className="flex h-12 w-full items-center justify-center rounded-full bg-purple-600 px-5 text-white font-medium transition-colors hover:bg-purple-700"
             >
               Test Notification
             </button>
           )}
 
           {notificationPermission === "denied" && (
-            <p className="text-center text-sm text-red-500/60">
+            <p className="text-center text-sm text-red-500">
               Notifications blocked. Enable in browser settings.
             </p>
           )}
@@ -576,7 +563,6 @@ function HomeContent() {
             <li>✓ Receive Shared Content</li>
             <li>✓ Push Notifications</li>
             <li>✓ Offline Support</li>
-            <li>✓ TinyAuth SSO</li>
           </ul>
         </div>
 
@@ -613,62 +599,3 @@ export default function Home() {
     </Suspense>
   );
 }
-
-const UserStatusBar = ({
-  authLoading,
-  isAuthenticated,
-  user,
-  logout,
-  login,
-}: {
-  authLoading: boolean;
-  isAuthenticated: boolean;
-  user: User | null;
-  logout: () => void;
-  login: () => void;
-}) => {
-  return (
-    <div className="w-full flex justify-end">
-      {authLoading ? (
-        <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
-      ) : isAuthenticated && user ? (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-medium">
-              {user.email.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-sm text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">
-              {user.name || user.email.split("@")[0]}
-            </span>
-          </div>
-          <button
-            onClick={() => logout()}
-            className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
-          >
-            Logout
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => login()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-            />
-          </svg>
-          Sign In
-        </button>
-      )}
-    </div>
-  );
-};

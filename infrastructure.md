@@ -44,28 +44,21 @@ homelabpwa/
 │   │   │   └── route.ts             # POST/GET handler for incoming shares
 │   │   │
 │   │   └── api/                     # API Routes
-    │   │       ├── auth/
-    │   │       │   └── me/
-    │   │       │       └── route.ts     # Returns authenticated user info
-    │   │       ├── tools/
-    │   │       │   └── send/
-    │   │       │       └── route.ts     # Sends tool data to external API (protected)
-    │   │       └── debug/
-    │   │           ├── env-check/
-    │   │           │   └── route.ts     # Checks environment variables
-    │   │           └── test-api/
-    │   │               └── route.ts     # Tests external API connectivity
+│   │       ├── tools/
+│   │       │   └── send/
+│   │       │       └── route.ts     # Sends tool data to external API
+│   │       └── debug/
+│   │           ├── env-check/
+│   │           │   └── route.ts     # Checks environment variables
+│   │           └── test-api/
+│   │               └── route.ts     # Tests external API connectivity
 │   │
 │   ├── components/
 │   │   └── DebugPanel.tsx           # Debug overlay component
 │   │
 │   ├── lib/                         # Utility libraries
-    │   │   ├── auth.ts                  # TinyAuth server-side verification
-    │   │   ├── auth-context.tsx         # Client-side auth context/provider
-    │   │   ├── share.ts                 # Web Share API utilities
-    │   │   └── push-notifications.ts    # Push notification utilities
-    │
-    │   ├── middleware.ts                # Route protection middleware
+│   │   ├── share.ts                 # Web Share API utilities
+│   │   └── push-notifications.ts    # Push notification utilities
 │   │
 │   └── types/
 │       └── next-pwa.d.ts            # TypeScript declarations for next-pwa
@@ -123,7 +116,6 @@ Root layout providing:
 - PWA metadata (manifest link, apple-web-app settings)
 - Viewport configuration
 - Geist font family (sans and mono)
-- AuthProvider wrapper with server-side initial user
 
 #### `src/app/page.tsx`
 
@@ -135,8 +127,6 @@ Main application page with:
 - Notification permission management
 - Metadata preview card for shared URLs
 - Integration with external Tools API
-- User authentication status display (login/logout)
-- Auth-gated tool saving functionality
 
 #### `src/app/share-target/route.ts`
 
@@ -150,17 +140,9 @@ Handles incoming shared content:
 
 ### API Routes
 
-#### `src/app/api/auth/me/route.ts`
-
-Returns authenticated user information:
-
-- GET: Returns current user from TinyAuth session
-- Returns `{ authenticated: true, user: {...} }` or `{ authenticated: false, user: null }`
-- Used by client-side AuthContext to check auth status
-
 #### `src/app/api/tools/send/route.ts`
 
-Sends tool data to external API (requires authentication):
+Sends tool data to external API:
 
 - Accepts URL, category_id, tags, is_favorite
 - Validates URL is provided
@@ -216,24 +198,6 @@ Tests external API connectivity:
 
 ### Library Files
 
-#### `src/lib/auth.ts`
-
-Server-side TinyAuth verification:
-
-- `verifySession()`: Verify TinyAuth session cookie and return user info
-- `getLoginUrl(returnTo)`: Generate TinyAuth login URL with redirect
-- `getLogoutUrl(returnTo)`: Generate TinyAuth logout URL
-- `isAuthenticated(cookieHeader)`: Check if request has valid session
-- `getUserFromCookie(cookieHeader)`: Extract user info from cookie
-
-#### `src/lib/auth-context.tsx`
-
-Client-side authentication context:
-
-- `AuthProvider`: React context provider with initial user from server
-- `useAuth()`: Hook returning `{ user, isAuthenticated, isLoading, login, logout, refresh }`
-- `useRequireAuth()`: Hook that redirects to login if not authenticated
-
 #### `src/lib/share.ts`
 
 Web Share API utilities:
@@ -250,18 +214,6 @@ Push notification utilities:
 - `subscribeToPushNotifications(vapidKey)`: Subscribe to push
 - `unsubscribeFromPushNotifications()`: Unsubscribe
 - `getPushSubscription()`: Get current subscription
-
-### Middleware
-
-#### `src/middleware.ts`
-
-Next.js middleware for route protection:
-
-- Protects API routes (`/api/tools/send`, `/api/tools/fetch-meta`)
-- Verifies TinyAuth session with external TinyAuth server
-- Passes user info via headers (`x-user-email`, `x-user-name`)
-- Returns 401 for unauthenticated requests to protected routes
-- Allows public routes (auth endpoints, debug, static assets)
 
 ### Service Worker
 
@@ -287,12 +239,10 @@ Debug overlay component showing:
 
 ## Environment Variables
 
-| Variable                   | Required | Description                                         |
-| -------------------------- | -------- | --------------------------------------------------- |
-| `TOOLS_API_URL`            | Yes      | External API endpoint for tools                     |
-| `TOOLS_API_KEY`            | Yes      | API key for authentication                          |
-| `TINYAUTH_URL`             | Yes      | TinyAuth server URL (e.g., https://auth.mrlopez.io) |
-| `NEXT_PUBLIC_TINYAUTH_URL` | Yes      | TinyAuth URL for client-side redirects              |
+| Variable        | Required | Description                     |
+| --------------- | -------- | ------------------------------- |
+| `TOOLS_API_URL` | Yes      | External API endpoint for tools |
+| `TOOLS_API_KEY` | Yes      | API key for authentication      |
 
 ## NPM Scripts
 
@@ -335,29 +285,7 @@ Debug overlay component showing:
 - Service worker caching via next-pwa/Workbox
 - Network status detection
 
-### TinyAuth SSO
-
-- Shared cookie authentication across \*.mrlopez.io subdomains
-- Server-side session verification via TinyAuth API
-- Client-side auth state with React Context
-- Middleware protection for sensitive API routes
-
 ## Data Flow
-
-### Authentication Flow
-
-```
-1. User visits app (homelab.mrlopez.io)
-2. Layout fetches session from TinyAuth via /api/me
-3. If no session, user sees "Sign In" button
-4. Click "Sign In" → redirect to auth.mrlopez.io
-5. User logs in with TinyAuth (email/password or SSO)
-6. TinyAuth sets session cookie on .mrlopez.io domain
-7. TinyAuth redirects back to app
-8. App now has valid session cookie
-9. Middleware validates session on protected API calls
-10. User can save tools (authenticated)
-```
 
 ### Share Target Flow
 
