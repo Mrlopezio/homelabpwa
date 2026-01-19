@@ -242,6 +242,60 @@ function HomeContent() {
     window.history.replaceState({}, "", "/");
   };
 
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-zinc-500 dark:text-zinc-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen when not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+        <main className="flex flex-col items-center justify-center gap-8 p-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-black dark:text-white mb-2">
+              MrLopez Share Tools
+            </h1>
+            <p className="text-zinc-500 dark:text-zinc-400">
+              Sign in to save and manage your tools
+            </p>
+          </div>
+
+          <button
+            onClick={() => login()}
+            className="flex items-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-colors"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+              />
+            </svg>
+            Sign in with TinyAuth
+          </button>
+
+          <p className="text-xs text-zinc-400 dark:text-zinc-600">
+            Waiting for authentication...
+          </p>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-md flex-col items-center justify-center gap-8 p-8">
@@ -330,44 +384,22 @@ function HomeContent() {
               </p>
             </div>
 
-            {/* Send button or login prompt */}
+            {/* Send button */}
             <div className="p-3 border-t border-zinc-200 dark:border-zinc-800">
-              {isAuthenticated ? (
-                <button
-                  onClick={handleSendTool}
-                  disabled={isSending}
-                  className="w-full h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  {isSending ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Tool"
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={() => login()}
-                  className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Sign in to Save
-                </button>
-              )}
+              <button
+                onClick={handleSendTool}
+                disabled={isSending}
+                className="w-full h-10 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+              >
+                {isSending ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Tool"
+                )}
+              </button>
             </div>
           </div>
         )}
@@ -548,7 +580,7 @@ function HomeContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">0.5.1</p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">0.5.3</p>
       </main>
 
       <DebugPanel

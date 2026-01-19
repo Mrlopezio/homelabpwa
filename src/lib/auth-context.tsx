@@ -60,6 +60,32 @@ export function AuthProvider({
     }
   }, [initialUser, refresh]);
 
+  // Periodically check auth status to detect login from TinyAuth
+  // (since TinyAuth may not auto-redirect after login)
+  useEffect(() => {
+    if (user) return; // Already authenticated, no need to poll
+
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            setUser(data.user);
+          }
+        }
+      } catch {
+        // Ignore errors during polling
+      }
+    };
+
+    // Check every 2 seconds when not authenticated
+    const interval = setInterval(checkAuth, 2000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const login = useCallback((returnTo?: string) => {
     const currentUrl = returnTo || window.location.href;
     // Redirect to TinyAuth login page
