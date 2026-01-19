@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// Note: This route is protected by middleware which verifies TinyAuth session
+// User info is passed via x-user-email and x-user-name headers from middleware
+
 interface ToolPayload {
   url: string;
   category_id: number;
@@ -29,6 +32,10 @@ interface ToolResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user info from middleware headers
+    const userEmail = request.headers.get("x-user-email");
+    const userName = request.headers.get("x-user-name");
+    
     const body = await request.json();
 
     // Build the payload with the new schema
@@ -47,6 +54,7 @@ export async function POST(request: NextRequest) {
     const apiUrl = process.env.TOOLS_API_URL;
 
     console.log("[tools/send] Sending tool to API", {
+      user: userEmail || userName || "unknown",
       hasApiKey: !!apiKey,
       hasApiUrl: !!apiUrl,
       payload,
