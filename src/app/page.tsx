@@ -16,22 +16,9 @@ interface SharedContent {
   tags?: string[];
 }
 
-interface SavedTool {
-  id: number;
-  name: string;
-  description: string;
-  url: string;
-  logo_url: string;
-  screenshot_url: string;
-  tags: string[];
-  category_id: number;
-  category_name: string;
-  category_color: string;
-  is_favorite: boolean;
-  display_order: number;
-  metadata_status: string;
-  created_at: string;
-  updated_at: string;
+interface SavedNote {
+  path: string;
+  title: string;
 }
 
 function HomeContent() {
@@ -46,7 +33,7 @@ function HomeContent() {
     null
   );
   const [isSending, setIsSending] = useState(false);
-  const [savedTool, setSavedTool] = useState<SavedTool | null>(null);
+  const [savedNote, setSavedNote] = useState<SavedNote | null>(null);
 
   useEffect(() => {
     // Check for shared content in URL
@@ -79,19 +66,20 @@ function HomeContent() {
   }, [searchParams]);
 
   const handleSendTool = async () => {
-    if (!sharedContent?.url) return;
+    if (!sharedContent?.url && !sharedContent?.title && !sharedContent?.text)
+      return;
 
     setIsSending(true);
     try {
-      // Build payload with new schema - only URL, category_id, tags, is_favorite
+      // Save the shared content as an Obsidian note (one note per item)
       const payload = {
         url: sharedContent.url,
-        category_id: 0, // Default category
+        title: sharedContent.title,
+        text: sharedContent.text,
         tags: sharedContent.tags || [],
-        is_favorite: false,
       };
 
-      const response = await fetch("/api/tools/send", {
+      const response = await fetch("/api/obsidian/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -107,8 +95,8 @@ function HomeContent() {
           details: result.details,
         });
       } else {
-        // Store the saved tool data from API response
-        setSavedTool(result.data);
+        // Store the created note path/title from API response
+        setSavedNote({ path: result.path, title: result.title });
         setSharedContent({
           ...sharedContent,
           status: "success",
@@ -229,7 +217,7 @@ function HomeContent() {
 
   const handleDismissShared = () => {
     setSharedContent(null);
-    setSavedTool(null);
+    setSavedNote(null);
     // Clear URL params
     window.history.replaceState({}, "", "/");
   };
@@ -251,7 +239,7 @@ function HomeContent() {
           <div className="w-full rounded-xl border bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 overflow-hidden">
             <div className="flex justify-between items-center p-3 border-b border-zinc-200 dark:border-zinc-800">
               <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                Save Tool
+                Save Note
               </h2>
               <button
                 onClick={handleDismissShared}
@@ -313,7 +301,7 @@ function HomeContent() {
 
               {/* Info note */}
               <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                Metadata will be fetched automatically after saving
+                Saved as a new note in your Obsidian vault
               </p>
             </div>
 
@@ -330,19 +318,19 @@ function HomeContent() {
                     Saving...
                   </>
                 ) : (
-                  "Save Tool"
+                  "Save Note"
                 )}
               </button>
             </div>
           </div>
         )}
 
-        {/* Success state - show saved tool from API response */}
-        {sharedContent && sharedContent.status === "success" && savedTool && (
+        {/* Success state - show the created Obsidian note */}
+        {sharedContent && sharedContent.status === "success" && savedNote && (
           <div className="w-full rounded-xl border bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 overflow-hidden">
             <div className="flex justify-between items-center p-3 border-b border-green-200 dark:border-green-800">
               <h2 className="text-sm font-semibold text-green-800 dark:text-green-200">
-                Tool Saved Successfully
+                Note Saved to Obsidian
               </h2>
               <button
                 onClick={handleDismissShared}
@@ -351,57 +339,16 @@ function HomeContent() {
                 ✕
               </button>
             </div>
-            <div className="p-4 space-y-3">
-              {/* Header with logo and title */}
-              <div className="flex items-start gap-3">
-                {savedTool.logo_url && (
-                  <img
-                    src={savedTool.logo_url}
-                    alt="Logo"
-                    className="w-12 h-12 rounded-lg object-contain bg-white dark:bg-zinc-800 p-1"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-green-900 dark:text-green-100 truncate">
-                    {savedTool.name}
-                  </h3>
-                  <p className="text-xs text-green-600 dark:text-green-400 truncate">
-                    {savedTool.url}
-                  </p>
-                </div>
-              </div>
-
-              {/* Description */}
-              {savedTool.description && (
-                <p className="text-sm text-green-700 dark:text-green-300 line-clamp-2">
-                  {savedTool.description}
-                </p>
-              )}
-
-              {/* Category badge */}
-              {savedTool.category_name && (
-                <div className="flex items-center gap-2">
-                  <span
-                    className="px-2 py-0.5 text-xs font-medium rounded-full text-white"
-                    style={{
-                      backgroundColor: savedTool.category_color || "#6b7280",
-                    }}
-                  >
-                    {savedTool.category_name}
-                  </span>
-                  {savedTool.is_favorite && (
-                    <span className="text-yellow-500">★</span>
-                  )}
-                </div>
-              )}
-
-              {/* Tags */}
-              {savedTool.tags && savedTool.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {savedTool.tags.map((tag) => (
+            <div className="p-4 space-y-2">
+              <h3 className="font-semibold text-green-900 dark:text-green-100 break-words">
+                {savedNote.title}
+              </h3>
+              <p className="text-xs font-mono text-green-600 dark:text-green-400 break-all">
+                {savedNote.path}
+              </p>
+              {sharedContent.tags && sharedContent.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {sharedContent.tags.map((tag) => (
                     <span
                       key={tag}
                       className="px-2 py-0.5 text-xs bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 rounded-full"
@@ -411,11 +358,6 @@ function HomeContent() {
                   ))}
                 </div>
               )}
-
-              {/* Metadata status */}
-              <p className="text-xs text-green-600 dark:text-green-400">
-                ID: {savedTool.id} • Status: {savedTool.metadata_status}
-              </p>
             </div>
           </div>
         )}
@@ -425,7 +367,7 @@ function HomeContent() {
           <div className="w-full p-4 rounded-xl border bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
             <div className="flex justify-between items-start mb-2">
               <h2 className="text-sm font-semibold text-red-800 dark:text-red-200">
-                Failed to Save Tool
+                Failed to Save Note
               </h2>
               <button
                 onClick={handleDismissShared}
