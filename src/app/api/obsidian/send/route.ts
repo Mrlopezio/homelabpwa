@@ -47,7 +47,7 @@ function buildTitle(p: NotePayload): string {
 
 function buildNote(
   p: NotePayload,
-  date: string
+  isoTimestamp: string
 ): { path: string; content: string } {
   const title = buildTitle(p);
   const slug = slugify(title) || "untitled";
@@ -56,14 +56,19 @@ function buildNote(
     /\/+$/,
     ""
   );
-  const path = `${folder}/${date}-${slug}.md`;
+  // Filesystem-safe timestamp (down to the second) so two shares saved close
+  // together — even with the same title — never collide on the same path.
+  // The Obsidian API is called with overwrite:false, so a collision means
+  // the second note silently fails to save rather than getting renamed.
+  const fileTimestamp = isoTimestamp.replace(/:/g, "-").replace(/\.\d+Z$/, "Z");
+  const path = `${folder}/${fileTimestamp}-${slug}.md`;
 
   const frontmatter = [
     "---",
     `title: ${JSON.stringify(title)}`,
     p.url ? `source: ${p.url}` : null,
     p.tags.length ? `tags: [${p.tags.join(", ")}]` : null,
-    `saved: ${date}`,
+    `saved: ${isoTimestamp}`,
     "---",
   ]
     .filter(Boolean)
@@ -114,8 +119,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const date = new Date().toISOString().slice(0, 10);
-    const note = buildNote(payload, date);
+    const isoTimestamp = new Date().toISOString();
+    const note = buildNote(payload, isoTimestamp);
 
     console.log("[obsidian/send] Creating note", { path: note.path });
 
